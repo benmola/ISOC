@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm uninstall *)",
+      "Bash(node -e \"console.log\\(require\\('pdfjs-dist/package.json'\\).version\\)\")",
+      "Bash(node -e \"console.log\\(require\\('tesseract.js/package.json'\\).version\\)\")",
+      "Bash(node -e \"const T = require\\('tesseract.js'\\); console.log\\(Object.keys\\(T\\)\\)\")",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(grep -n \"gemini\\\\|@google/genai\\\\|parseTimetableImage\" src/**/*.ts src/**/*.tsx)",
+      "Bash(grep \"genai\" package.json)"
+    ]
+  }
+}

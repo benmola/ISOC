@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Capacitor } from '@capacitor/core';
 import { cn } from '../lib/utils';
 import { AppTab } from '../types';
 import { Home, Calendar, Scan, Info, Menu, X, Bell, Moon, Star, ExternalLink } from 'lucide-react';
@@ -216,7 +217,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, onTabChange
                   <div className="space-y-3">
                     <h3 className="font-headline font-semibold text-xs text-on-surface-variant uppercase tracking-wider">About</h3>
                     <a 
-                      href="https://play.google.com/store/apps/details?id=com.surreyisoc.app" 
+                      href={Capacitor.getPlatform() === 'ios'
+                        ? 'https://apps.apple.com/app/isoc-prayer-room/id{YOUR_APP_ID}'
+                        : 'https://play.google.com/store/apps/details?id=com.surreyisoc.app'
+                      } 
                       target="_blank" 
                       rel="noopener noreferrer" 
                       className="block"
