@@ -5,6 +5,7 @@ import { MOCK_PRAYERS } from '../constants';
 import { Bell, Sun, CloudSun, Moon, CloudMoon, Info, Heart, Loader2, Building2, Users, Navigation } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSchedule } from '../hooks/useSchedule';
+import { useTodayPrayers } from '../hooks/useTodayPrayers';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -16,9 +17,16 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onViewCalendar, selectedDate, onDateChange }) => {
   const { schedule, loading, error } = useSchedule(selectedDate);
-  
-  // Find the schedule for the selected date, or default to today's mock data if no schedule exists
-  const todaySchedule = schedule?.days.find(p => p.dateStr === format(selectedDate, 'yyyy-MM-dd')) || MOCK_PRAYERS.find(p => isSameDay(p.date, selectedDate)) || MOCK_PRAYERS[1];
+  const { data: livePrayers, loading: liveLoading } = useTodayPrayers();
+
+  // For today: prefer live data from masjidbox.com
+  // For other dates: fall back to the uploaded monthly schedule or mock data
+  const isViewingToday = isSameDay(selectedDate, new Date());
+  const todaySchedule = (isViewingToday && livePrayers)
+    ? livePrayers
+    : schedule?.days.find(p => p.dateStr === format(selectedDate, 'yyyy-MM-dd'))
+      || MOCK_PRAYERS.find(p => isSameDay(p.date, selectedDate))
+      || MOCK_PRAYERS[1];
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [jumuahConfig, setJumuahConfig] = useState<string | null>(null);
@@ -131,13 +139,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onViewCalendar, selected
         <p className="text-on-surface-variant text-sm mt-1">{todaySchedule.date ? format(todaySchedule.date, 'EEEE, d MMMM') : format(selectedDate, 'EEEE, d MMMM')} • {todaySchedule.hijriDate}</p>
       </section>
 
-      {loading && (
+      {(loading || (isViewingToday && liveLoading)) && (
         <div className="flex justify-center items-center py-8">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
       )}
 
-      {!loading && !schedule && (
+      {!loading && !isViewingToday && !schedule && (
         <div className="bg-error-container text-on-error-container p-4 rounded-xl text-sm mb-4">
           No schedule uploaded for this month yet. Showing default mock data.
         </div>

@@ -9,7 +9,12 @@
       "Bash(npx tsc *)",
       "Bash(npx vite *)",
       "Bash(grep -n \"gemini\\\\|@google/genai\\\\|parseTimetableImage\" src/**/*.ts src/**/*.tsx)",
-      "Bash(grep \"genai\" package.json)"
+      "Bash(grep \"genai\" package.json)",
+      "WebFetch(domain:masjidbox.com)",
+      "Bash(keytool -list -v -keystore __TRACKED_VAR__/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android)",
+      "Bash(keytool -list -v -keystore \"C:/Users/bdekh/.android/debug.keystore\" -alias androiddebugkey -storepass android -keypass android)",
+      "Read(//d/ISOC/**)",
+      "Bash(npx cap *)"
     ]
   }
 }
