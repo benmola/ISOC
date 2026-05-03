@@ -5,6 +5,7 @@ const geminiApiKey =
   import.meta.env.GEMINI_API_KEY ||
   (typeof process !== 'undefined' ? process.env?.GEMINI_API_KEY : undefined);
 
+const GEMINI_MODEL = 'gemini-2.5-flash';
 const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
 
 export interface Prayer {
@@ -18,6 +19,31 @@ export interface ParsedDay {
   hijriDate?: string;
   sunrise?: string;
   prayers: Prayer[];
+}
+
+function stripCodeFences(text: string): string {
+  let jsonStr = text.trim();
+
+  if (jsonStr.startsWith('```json')) {
+    jsonStr = jsonStr.slice(7);
+  } else if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.slice(3);
+  }
+
+  if (jsonStr.endsWith('```')) {
+    jsonStr = jsonStr.slice(0, -3);
+  }
+
+  return jsonStr.trim();
+}
+
+function parseJsonResponse(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('Gemini returned invalid JSON:', text);
+    throw new Error('AI returned invalid data. Please try again with a clearer image.');
+  }
 }
 
 export async function parseTimetableImage(base64Image: string, mimeType: string): Promise<ParsedDay[]> {
@@ -58,36 +84,24 @@ Return this exact JSON structure:
 ]`;
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_MODEL,
       contents: [
         { text: prompt },
-        { inlineData: { data: base64Image, mimeType: mimeType } },
+        { inlineData: { data: base64Image, mimeType } },
       ],
     });
 
-    clearTimeout(timeoutId);
-
     const text = response.text?.trim() || '';
-    
-    // Remove markdown code blocks if present
-    let jsonStr = text;
-    if (text.startsWith('```json')) {
-      jsonStr = text.slice(7);
-    } else if (text.startsWith('```')) {
-      jsonStr = text.slice(3);
+    if (!text) {
+      throw new Error('Gemini returned no text.');
     }
-    if (jsonStr.endsWith('```')) {
-      jsonStr = jsonStr.slice(0, -3);
-    }
-    jsonStr = jsonStr.trim();
+
+    const jsonStr = stripCodeFences(text);
 
     console.log('Raw AI response:', jsonStr.substring(0, 500));
 
-    const parsed = JSON.parse(jsonStr);
+    const parsed = parseJsonResponse(jsonStr);
     
     // Validate structure
     if (!Array.isArray(parsed)) {
@@ -120,6 +134,10 @@ Return this exact JSON structure:
 
   } catch (error) {
     console.error('Gemini parse error:', error);
-    throw new Error(`Failed to parse image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    if (/quota|rate limit|billing/i.test(message)) {
+      throw new Error('Failed to parse image: Gemini quota for the configured API key has been reached. Check the API key billing or usage limits.');
+    }
+    throw new Error(`Failed to parse image: ${message}`);
   }
 }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { format, addDays, isSameDay } from 'date-fns';
-import { MOCK_PRAYERS } from '../constants';
 import { Bell, Sun, CloudSun, Moon, CloudMoon, Info, Heart, Loader2, Building2, Users, Navigation } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useSchedule } from '../hooks/useSchedule';
@@ -16,9 +15,24 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onViewCalendar, selectedDate, onDateChange }) => {
   const { schedule, loading, error } = useSchedule(selectedDate);
-  
-  // Find the schedule for the selected date, or default to today's mock data if no schedule exists
-  const todaySchedule = schedule?.days.find(p => p.dateStr === format(selectedDate, 'yyyy-MM-dd')) || MOCK_PRAYERS.find(p => isSameDay(p.date, selectedDate)) || MOCK_PRAYERS[1];
+
+  const selectedDateKey = format(selectedDate, 'yyyy-MM-dd');
+  const daySchedule = schedule?.days.find((entry) => entry.dateStr === selectedDateKey) ?? null;
+  const parsedScheduleDate = daySchedule ? new Date(daySchedule.dateStr) : null;
+  const safeScheduleDate = parsedScheduleDate && !Number.isNaN(parsedScheduleDate.getTime()) ? parsedScheduleDate : selectedDate;
+  const todaySchedule = daySchedule
+    ? {
+        date: safeScheduleDate,
+        hijriDate: daySchedule.hijriDate || '',
+        sunrise: daySchedule.sunrise || '',
+        prayers: daySchedule.prayers,
+      }
+    : {
+        date: selectedDate,
+        hijriDate: '',
+        sunrise: '',
+        prayers: [],
+      };
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [jumuahConfig, setJumuahConfig] = useState<string | null>(null);
@@ -139,7 +153,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onViewCalendar, selected
 
       {!loading && !schedule && (
         <div className="bg-error-container text-on-error-container p-4 rounded-xl text-sm mb-4">
-          No schedule uploaded for this month yet. Showing default mock data.
+          No schedule uploaded for this month yet.
+        </div>
+      )}
+
+      {!loading && schedule && !daySchedule && (
+        <div className="bg-error-container text-on-error-container p-4 rounded-xl text-sm mb-4">
+          No schedule found for {format(selectedDate, 'd MMMM yyyy')}.
         </div>
       )}
 

@@ -128,7 +128,7 @@ export const ScanScreen: React.FC = () => {
               ctx.drawImage(img, 0, 0, width, height);
             }
             
-            resolve(canvas.toDataURL('image/jpeg', 0.6)); // 0.6 quality for aggressive compression
+            resolve(canvas.toDataURL('image/jpeg', 0.6));
           };
           img.onerror = () => reject(new Error('Failed to load image for compression'));
           img.src = event.target?.result as string;

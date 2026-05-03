@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 
 admin.initializeApp();
 
@@ -23,7 +23,7 @@ interface ScheduleData {
 export const sendDailyPrayerNotifications = functions.pubsub
   .schedule('0 0 * * *')
   .timeZone('Europe/London')
-  .onRun(async (context) => {
+  .onRun(async (_context: functions.EventContext) => {
     try {
       const now = new Date();
       const tomorrow = new Date(now);
@@ -53,7 +53,7 @@ export const sendDailyPrayerNotifications = functions.pubsub
       const usersSnapshot = await db.collection('users').where('fcmToken', '!=', null).get();
       
       const isFriday = tomorrow.getDay() === 5;
-      const notifications: admin.messaging.Message[] = [];
+      const notifications: Array<Omit<admin.messaging.TokenMessage, 'token'>> = [];
 
       for (const prayer of daySchedule.prayers) {
         const displayName = (prayer.name === 'Dhuhr' && isFriday) ? 'Jumu\'ah' : prayer.name;
@@ -100,8 +100,8 @@ export const sendDailyPrayerNotifications = functions.pubsub
       }
 
       const tokens: string[] = [];
-      usersSnapshot.forEach(doc => {
-        const token = doc.data().fcmToken;
+      usersSnapshot.forEach((userDoc) => {
+        const token = userDoc.data().fcmToken;
         if (token) tokens.push(token);
       });
 
